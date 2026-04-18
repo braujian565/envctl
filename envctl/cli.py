@@ -1,83 +1,75 @@
 """Main CLI entry point for envctl."""
-
-from __future__ import annotations
-
 import click
-
 from envctl.store import EnvStore
 from envctl.cli_export import export
 from envctl.cli_switch import switch_group
+from envctl.cli_diff import diff_group
 
 
 @click.group()
-@click.option("--store", "store_path", default=None,
-              help="Path to env store file.")
-@click.pass_context
-def cli(ctx: click.Context, store_path: str | None) -> None:
+def cli():
     """envctl — manage and switch project environment variable sets."""
-    ctx.ensure_object(dict)
-    ctx.obj["store"] = EnvStore(store_path)
+    pass
 
 
 @cli.command()
 @click.argument("name")
-@click.option("--env", "-e", multiple=True, metavar="KEY=VALUE",
-              help="Environment variable in KEY=VALUE form.")
-@click.pass_context
-def save(ctx: click.Context, name: str, env: tuple[str, ...]) -> None:
-    """Save an env set NAME with provided variables."""
-    store: EnvStore = ctx.obj["store"]
-    env_vars: dict[str, str] = {}
+@click.option("-e", "--env", multiple=True, help="KEY=VALUE pairs.")
+def save(name, env):
+    """Save an environment set by NAME."""
+    pairs = {}
     for item in env:
         if "=" not in item:
-            raise click.BadParameter(f"Expected KEY=VALUE, got: {item}")
+            click.echo(f"Invalid format: '{item}'. Expected KEY=VALUE.", err=True)
+            raise SystemExit(1)
         key, _, value = item.partition("=")
-        env_vars[key.strip()] = value
-    store.save(name, env_vars)
-    click.echo(f"Saved env set '{name}' with {len(env_vars)} variable(s).")
+        pairs[key.strip()] = value.strip()
+    store = EnvStore()
+    store.save(name, pairs)
+    click.echo(f"Saved environment set '{name}' with {len(pairs)} variable(s).")
 
 
-@cli.command(name="list")
-@click.pass_context
-def list_sets(ctx: click.Context) -> None:
-    """List all saved env sets."""
-    store: EnvStore = ctx.obj["store"]
-    names = store.list()
-    if not names:
-        click.echo("No env sets saved.")
+@cli.command("list")
+def list_sets():
+    """List all saved environment sets."""
+    store = EnvStore()
+    sets = store.list()
+    if not sets:
+        click.echo("No environment sets saved.")
     else:
-        for name in names:
+        for name in sets:
             click.echo(name)
 
 
 @cli.command()
 @click.argument("name")
-@click.pass_context
-def show(ctx: click.Context, name: str) -> None:
-    """Show variables in env set NAME."""
-    store: EnvStore = ctx.obj["store"]
-    env_vars = store.load(name)
-    if env_vars is None:
-        raise click.ClickException(f"Env set '{name}' not found.")
-    for key, value in env_vars.items():
+def show(name):
+    """Show variables in a saved environment set."""
+    store = EnvStore()
+    env_set = store.load(name)
+    if env_set is None:
+        click.echo(f"No environment set named '{name}'.", err=True)
+        raise SystemExit(1)
+    for key, value in sorted(env_set.items()):
         click.echo(f"{key}={value}")
 
 
 @cli.command()
 @click.argument("name")
-@click.pass_context
-def delete(ctx: click.Context, name: str) -> None:
-    """Delete env set NAME."""
-    store: EnvStore = ctx.obj["store"]
+def delete(name):
+    """Delete a saved environment set."""
+    store = EnvStore()
     removed = store.delete(name)
     if removed:
-        click.echo(f"Deleted env set '{name}'.")
+        click.echo(f"Deleted environment set '{name}'.")
     else:
-        raise click.ClickException(f"Env set '{name}' not found.")
+        click.echo(f"No environment set named '{name}'.", err=True)
+        raise SystemExit(1)
 
 
 cli.add_command(export)
 cli.add_command(switch_group, name="switch")
+cli.add_command(diff_group, name="diff")
 
 
 if __name__ == "__main__":
