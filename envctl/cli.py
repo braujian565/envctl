@@ -1,72 +1,83 @@
-"""CLI entry point for envctl using Click."""
+"""Main CLI entry point for envctl."""
+
+from __future__ import annotations
 
 import click
+
 from envctl.store import EnvStore
+from envctl.cli_export import export
+from envctl.cli_switch import switch_group
 
 
 @click.group()
-def cli():
-    """envctl — manage and switch between project environment variable sets."""
-    pass
+@click.option("--store", "store_path", default=None,
+              help="Path to env store file.")
+@click.pass_context
+def cli(ctx: click.Context, store_path: str | None) -> None:
+    """envctl — manage and switch project environment variable sets."""
+    ctx.ensure_object(dict)
+    ctx.obj["store"] = EnvStore(store_path)
 
 
-@cli.command("save")
+@cli.command()
 @click.argument("name")
-@click.option("--var", "-v", multiple=True, help="KEY=VALUE pair to store.")
-def save(name, var):
-    """Save a named environment set."""
-    env_vars = {}
-    for item in var:
+@click.option("--env", "-e", multiple=True, metavar="KEY=VALUE",
+              help="Environment variable in KEY=VALUE form.")
+@click.pass_context
+def save(ctx: click.Context, name: str, env: tuple[str, ...]) -> None:
+    """Save an env set NAME with provided variables."""
+    store: EnvStore = ctx.obj["store"]
+    env_vars: dict[str, str] = {}
+    for item in env:
         if "=" not in item:
-            raise click.BadParameter(f"Invalid format '{item}', expected KEY=VALUE")
+            raise click.BadParameter(f"Expected KEY=VALUE, got: {item}")
         key, _, value = item.partition("=")
-        env_vars[key.strip()] = value.strip()
-
-    if not env_vars:
-        raise click.UsageError("Provide at least one --var KEY=VALUE")
-
-    store = EnvStore()
-    store.save_set(name, env_vars)
-    click.echo(f"Saved environment set '{name}' with {len(env_vars)} variable(s).")
+        env_vars[key.strip()] = value
+    store.save(name, env_vars)
+    click.echo(f"Saved env set '{name}' with {len(env_vars)} variable(s).")
 
 
-@cli.command("list")
-def list_sets():
-    """List all saved environment sets."""
-    store = EnvStore()
-    names = store.list_sets()
+@cli.command(name="list")
+@click.pass_context
+def list_sets(ctx: click.Context) -> None:
+    """List all saved env sets."""
+    store: EnvStore = ctx.obj["store"]
+    names = store.list()
     if not names:
-        click.echo("No environment sets saved.")
+        click.echo("No env sets saved.")
     else:
-        click.echo("Saved environment sets:")
         for name in names:
-            click.echo(f"  - {name}")
+            click.echo(name)
 
 
-@cli.command("show")
+@cli.command()
 @click.argument("name")
-def show(name):
-    """Show variables in a named environment set."""
-    store = EnvStore()
-    env_vars = store.load_set(name)
+@click.pass_context
+def show(ctx: click.Context, name: str) -> None:
+    """Show variables in env set NAME."""
+    store: EnvStore = ctx.obj["store"]
+    env_vars = store.load(name)
     if env_vars is None:
-        click.echo(f"No environment set named '{name}' found.", err=True)
-        raise SystemExit(1)
-    click.echo(f"Environment set '{name}':")
+        raise click.ClickException(f"Env set '{name}' not found.")
     for key, value in env_vars.items():
-        click.echo(f"  {key}={value}")
+        click.echo(f"{key}={value}")
 
 
-@cli.command("delete")
+@cli.command()
 @click.argument("name")
-def delete(name):
-    """Delete a named environment set."""
-    store = EnvStore()
-    if store.delete_set(name):
-        click.echo(f"Deleted environment set '{name}'.")
+@click.pass_context
+def delete(ctx: click.Context, name: str) -> None:
+    """Delete env set NAME."""
+    store: EnvStore = ctx.obj["store"]
+    removed = store.delete(name)
+    if removed:
+        click.echo(f"Deleted env set '{name}'.")
     else:
-        click.echo(f"No environment set named '{name}' found.", err=True)
-        raise SystemExit(1)
+        raise click.ClickException(f"Env set '{name}' not found.")
+
+
+cli.add_command(export)
+cli.add_command(switch_group, name="switch")
 
 
 if __name__ == "__main__":
