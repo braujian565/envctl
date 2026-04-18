@@ -46,6 +46,13 @@ def test_remove_tag_nonexistent(mock_store):
     mock_store.save_meta.assert_not_called()
 
 
+def test_remove_tag_last_tag_leaves_empty_list(mock_store):
+    mock_store.load_meta.return_value = {"tags": ["backend"]}
+    result = tagger.remove_tag(mock_store, "dev", "backend")
+    assert result is True
+    mock_store.save_meta.assert_called_once_with("dev", {"tags": []})
+
+
 def test_get_tags_empty(mock_store):
     tags = tagger.get_tags(mock_store, "dev")
     assert tags == []
