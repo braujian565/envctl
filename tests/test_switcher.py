@@ -62,11 +62,25 @@ def test_apply_set_raises_on_missing(mock_store):
         apply_set("ghost", mock_store)
 
 
+def test_apply_set_does_not_set_active_on_missing(mock_store):
+    """Active set should not be updated when the target set does not exist."""
+    mock_store.load.return_value = None
+    with pytest.raises(KeyError):
+        apply_set("ghost", mock_store)
+    assert get_active() is None
+
+
 def test_unapply_set_returns_name(mock_store):
     set_active("staging")
     name = unapply_set(mock_store)
     assert name == "staging"
     assert get_active() is None
+
+
+def test_unapply_set_when_none_active(mock_store):
+    """unapply_set should return None gracefully when no set is active."""
+    result = unapply_set(mock_store)
+    assert result is None
 
 
 def test_switch_set_changes_active(mock_store):
