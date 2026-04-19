@@ -62,3 +62,11 @@ def test_fire_with_hooks(runner):
     with patch("envctl.cli_notifier.fire_hooks", return_value=["backup.sh"]):
         result = invoke(runner, "fire", "snapshot")
     assert "backup.sh" in result.output
+
+
+def test_fire_invalid_event(runner):
+    """Firing an unknown event should fail with a non-zero exit code."""
+    with patch("envctl.cli_notifier.fire_hooks", side_effect=ValueError("Unknown event: bad_event")):
+        result = invoke(runner, "fire", "bad_event")
+    assert result.exit_code != 0
+    assert "Error" in result.output
