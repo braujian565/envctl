@@ -38,6 +38,18 @@ def diff_sets(
     }
 
 
+def diff_summary(diff: dict) -> str:
+    """Return a one-line summary of a diff dict.
+
+    Example: "2 added, 1 removed, 3 changed, 5 unchanged"
+    """
+    parts = []
+    for label in ("added", "removed", "changed", "unchanged"):
+        count = len(diff[label])
+        parts.append(f"{count} {label}")
+    return ", ".join(parts)
+
+
 def format_diff(diff: dict, color: bool = True) -> str:
     """Format a diff dict as a human-readable string."""
     lines = []
