@@ -23,6 +23,12 @@ def test_create_profile_persisted(tmp_profile):
     assert "prod" in profiler.list_profiles(tmp_profile)
 
 
+def test_create_duplicate_profile_raises(tmp_profile):
+    profiler.create_profile("dev", ["base"], tmp_profile)
+    with pytest.raises(KeyError):
+        profiler.create_profile("dev", ["other"], tmp_profile)
+
+
 def test_get_profile_existing(tmp_profile):
     profiler.create_profile("staging", ["staging-db"], tmp_profile)
     p = profiler.get_profile("staging", tmp_profile)
