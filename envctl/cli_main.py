@@ -1,4 +1,5 @@
-"""Main CLI entry point for envctl — registers all command groups."""
+"""Entry-point that assembles all CLI command groups."""
+from __future__ import annotations
 
 import click
 
@@ -25,11 +26,14 @@ from envctl.cli_aliaser import alias_group
 from envctl.cli_tracer import trace_group
 from envctl.cli_categorizer import categorize_group
 from envctl.cli_sanitizer import sanitize_group
+from envctl.cli_interpolator import interp_group
+from envctl.cli_promoter import promote_group
+from envctl.cli_roller import rollback_group
 
 
 @click.group()
-@click.version_option("0.1.0", prog_name="envctl")
-def main():
+@click.version_option()
+def main() -> None:
     """envctl — manage and switch between project environment variable sets."""
 
 
@@ -56,3 +60,10 @@ main.add_command(alias_group)
 main.add_command(trace_group)
 main.add_command(categorize_group)
 main.add_command(sanitize_group)
+main.add_command(interp_group)
+main.add_command(promote_group)
+main.add_command(rollback_group)
+
+
+if __name__ == "__main__":
+    main()
