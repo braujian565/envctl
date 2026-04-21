@@ -67,6 +67,24 @@ def delete(name):
         raise SystemExit(1)
 
 
+@cli.command()
+@click.argument("name")
+@click.argument("new_name")
+def rename(name, new_name):
+    """Rename a saved environment set from NAME to NEW_NAME."""
+    store = EnvStore()
+    env_set = store.load(name)
+    if env_set is None:
+        click.echo(f"No environment set named '{name}'.", err=True)
+        raise SystemExit(1)
+    if store.load(new_name) is not None:
+        click.echo(f"An environment set named '{new_name}' already exists.", err=True)
+        raise SystemExit(1)
+    store.save(new_name, env_set)
+    store.delete(name)
+    click.echo(f"Renamed environment set '{name}' to '{new_name}'.")
+
+
 cli.add_command(export)
 cli.add_command(switch_group, name="switch")
 cli.add_command(diff_group, name="diff")
