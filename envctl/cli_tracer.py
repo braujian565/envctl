@@ -9,6 +9,12 @@ def trace_group():
     """Track and inspect env set access history."""
 
 
+def _format_entry(e):
+    """Format a single trace entry for display."""
+    detail = f"  ({e['detail']})" if "detail" in e else ""
+    return f"{e['timestamp']}  [{e['action']}]  {e['set']}{detail}"
+
+
 @trace_group.command(name="log")
 @click.argument("set_name", required=False)
 @click.option("--limit", default=20, show_default=True, help="Max entries to show.")
@@ -19,8 +25,7 @@ def log(set_name, limit):
         click.echo("No trace entries found.")
         return
     for e in entries:
-        detail = f"  ({e['detail']})" if "detail" in e else ""
-        click.echo(f"{e['timestamp']}  [{e['action']}]  {e['set']}{detail}")
+        click.echo(_format_entry(e))
 
 
 @trace_group.command(name="top")
