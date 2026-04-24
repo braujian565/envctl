@@ -18,12 +18,18 @@ def _format_entry(e):
 @trace_group.command(name="log")
 @click.argument("set_name", required=False)
 @click.option("--limit", default=20, show_default=True, help="Max entries to show.")
-def log(set_name, limit):
+@click.option("--action", default=None, help="Filter by action type (e.g. 'load', 'unload').")
+def log(set_name, limit, action):
     """Show access log, optionally filtered by SET_NAME."""
     entries = get_trace(set_name=set_name, limit=limit)
     if not entries:
         click.echo("No trace entries found.")
         return
+    if action:
+        entries = [e for e in entries if e.get("action") == action]
+        if not entries:
+            click.echo(f"No trace entries found for action '{action}'.")
+            return
     for e in entries:
         click.echo(_format_entry(e))
 
