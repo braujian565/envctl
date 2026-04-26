@@ -35,9 +35,10 @@ def apply_migrations(
     Raises KeyError if any migration name is unknown (stops before applying).
     """
     # Validate all names first so we fail atomically
-    for name in names:
-        if name not in _REGISTRY:
-            raise KeyError(f"Unknown migration: '{name}'")
+    unknown = [name for name in names if name not in _REGISTRY]
+    if unknown:
+        missing = ", ".join(f"'{n}'" for n in unknown)
+        raise KeyError(f"Unknown migration(s): {missing}")
 
     result = dict(env)
     applied: List[str] = []
