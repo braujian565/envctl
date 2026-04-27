@@ -88,3 +88,21 @@ def format_weight_report(report: Dict) -> str:
         f"Weight score   : {report['weight']}",
     ]
     return "\n".join(lines)
+
+
+def format_all_weight_reports(reports: List[Dict]) -> str:
+    """Return a human-readable summary table for multiple weight reports.
+
+    Reports are assumed to already be sorted (e.g. from :func:`weigh_all`).
+    Each row shows the set name, key count, sensitive count, and weight score.
+    """
+    if not reports:
+        return "No env sets found."
+
+    header = f"{'Set':<20} {'Keys':>6} {'Sensitive':>10} {'Weight':>8}"
+    separator = "-" * len(header)
+    rows = [
+        f"{r['name']:<20} {r['key_count']:>6} {r['sensitive_count']:>10} {r['weight']:>8}"
+        for r in reports
+    ]
+    return "\n".join([header, separator] + rows)
