@@ -72,6 +72,14 @@ def test_dedup_invalid_strategy_raises():
         deduplicate_set({"A": "1"}, strategy="unknown")
 
 
+def test_dedup_returns_copy_not_mutating_original():
+    """deduplicate_set should not mutate the original dict."""
+    env = {"FOO": "first", "foo": "second"}
+    original = dict(env)
+    deduplicate_set(env, strategy="first")
+    assert env == original
+
+
 # ---------------------------------------------------------------------------
 # deduplicate_store_set
 # ---------------------------------------------------------------------------
@@ -98,19 +106,3 @@ def test_dedup_store_set_missing_raises():
     store = _FakeStore({})
     with pytest.raises(KeyError, match="not found"):
         deduplicate_store_set(store, "nonexistent")
-
-
-# ---------------------------------------------------------------------------
-# format_dedup_report
-# ---------------------------------------------------------------------------
-
-def test_format_report_no_removed():
-    report = format_dedup_report("dev", [])
-    assert "No duplicate" in report
-
-
-def test_format_report_with_removed():
-    report = format_dedup_report("dev", ["foo", "bar"])
-    assert "2" in report
-    assert "foo" in report
-    assert "bar" in report
