@@ -15,6 +15,21 @@ def dupes_group():
     """Find duplicate keys and values across environment sets."""
 
 
+def _load_env_sets(store, names):
+    """Load environment sets by name, warning on missing sets.
+
+    Returns a dict mapping set name to its key/value data.
+    """
+    env_sets = {}
+    for name in names:
+        data = store.load_set(name)
+        if data is not None:
+            env_sets[name] = data
+        else:
+            click.echo(f"Warning: set '{name}' not found, skipping.", err=True)
+    return env_sets
+
+
 @dupes_group.command(name="values")
 @click.option("--store", "store_path", default=None, help="Path to env store file.")
 @click.option("--sets", "set_names", default=None, help="Comma-separated list of sets to scan.")
@@ -27,13 +42,7 @@ def values(store_path, set_names):
         click.echo("No environment sets found.")
         return
 
-    env_sets = {}
-    for name in names:
-        data = store.load_set(name)
-        if data is not None:
-            env_sets[name] = data
-        else:
-            click.echo(f"Warning: set '{name}' not found, skipping.", err=True)
+    env_sets = _load_env_sets(store, names)
 
     dupes = find_duplicate_values(env_sets)
     if not dupes:
@@ -55,13 +64,7 @@ def keys(store_path, set_names):
         click.echo("No environment sets found.")
         return
 
-    env_sets = {}
-    for name in names:
-        data = store.load_set(name)
-        if data is not None:
-            env_sets[name] = data
-        else:
-            click.echo(f"Warning: set '{name}' not found, skipping.", err=True)
+    env_sets = _load_env_sets(store, names)
 
     if len(env_sets) < 2:
         click.echo("Need at least two sets to compare keys.")
